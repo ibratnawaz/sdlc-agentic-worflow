@@ -12,6 +12,11 @@ A 6-step, human-gated workflow for GitHub Copilot (VS Code for React/TS, Intelli
 After every step you see a usage table (an estimate, plus the real credits if you log them).
 To learn *why* it's built this way, read **[LEARNING.md](LEARNING.md)**.
 
+📊 **Visual overview:** [docs/workflow-diagram.svg](docs/workflow-diagram.svg). It shows the whole workflow on one page: the orchestrator,
+the six phase subagents, the human gates, the data sources (MCP or scripts), the shared files, and the code layer that enforces the rules.
+
+[![Workflow diagram](docs/workflow-diagram.svg)](docs/workflow-diagram.svg)
+
 ## What's inside
 
 ```
