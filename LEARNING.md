@@ -203,3 +203,33 @@ skill's iron laws forbid approving on the user's behalf, and why you should glan
   (e.g. two reviewers) may run in parallel.
 - **No recursion.** The orchestrator has `disable-model-invocation: true`. Phase agents don't have the `agent` tool, so they can't spawn subagents.
 - **Least privilege.** The orchestrator has no `edit` tool, and its instructions limit it to `wf.py` commands.
+
+---
+
+## 9. (v-2.1) Supporting more languages: separate *process* from *knowledge*
+
+The six phases are the **process**, and they're identical for React, Angular, Spring Boot or anything else.
+What differs per language is **knowledge**: conventions, test tools and commands, review rules, and how a Figma
+variant becomes a component API. Before v-2.1 that knowledge was mixed into the skills, so adding Angular would have meant
+editing six skills, and the React instruction file (`applyTo: **/*.{ts,tsx}`) would have applied to Angular's `.ts` files too.
+
+The fix is a classic plugin pattern:
+
+| Layer | Where | Changes when you add a language? |
+|---|---|---|
+| Process (phases, gates, approvals) | `.github/agents`, `.github/skills`, `wf.py` | **No** |
+| Detection (which stack is this repo?) | `config.json → stacks` (code decides, not the AI) | one entry |
+| Knowledge | `tools/copilot-wf/stacks/<stack>/` (4 files) | **one new folder** |
+| Always-on coding rules | `.github/instructions/<stack>.instructions.md`, copied by `wf.py use-stack` | generated |
+
+Why each design choice:
+- **Detection is code.** `wf.py detect` gives the same answer every time, and a test proves it. The AI only asks you when there's a real
+  ambiguity, like a monorepo.
+- **A fixed file set per stack.** The skills can say "read `stacks/<stack>/testing.md`" without knowing which stack it is.
+  `TestProfilesAreComplete` fails if a stack is missing a file, so a half-finished language can't ship.
+- **Same headings in every profile** (Commands / Test levels / Patterns …). The AI finds the same information in the same place for every language.
+- **"Use what the repo already has."** Profiles describe the options (e.g. Karma vs Jest vs Vitest for Angular) without forcing one.
+  The AI follows the repo and never switches tools on its own.
+
+**Exercise 9:** add a backend stack you know (e.g. `dotnet` with `*.csproj`, or `fastapi` with `pyproject.toml` containing `fastapi`).
+Follow `tools/copilot-wf/stacks/README.md`, write the detection test first, and finish when `wf.py stacks` shows ✔.

@@ -1,7 +1,7 @@
 ---
 name: wf-orchestrator
 description: "Runs the whole ticket workflow end to end: delegates each phase to its own subagent (clean context per phase), relays questions, and stops for your approval of the plan and the push."
-argument-hint: "Ticket key and side, e.g. PROJ-1234 fe"
+argument-hint: "Ticket key, e.g. PROJ-1234 (optionally: angular)"
 tools: ['agent', 'read', 'execute', 'todo']
 agents: ['wf-1-analyze', 'wf-2-design', 'wf-3-plan', 'wf-4-implement', 'wf-5-review', 'wf-6-ship']
 disable-model-invocation: true

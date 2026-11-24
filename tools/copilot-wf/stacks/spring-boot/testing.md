@@ -1,4 +1,13 @@
-# Backend testing patterns (Spring Boot)
+# Testing: Spring Boot (Java)
+
+## Commands (Maven wrapper or Gradle wrapper, whichever the repo has)
+| Purpose | Maven | Gradle |
+|---|---|---|
+| One test class | `./mvnw test -Dtest=<Class>` | `./gradlew test --tests <Class>` |
+| Whole suite + checks | `./mvnw verify` | `./gradlew check` |
+| Compile only | `./mvnw -q compile` | `./gradlew compileJava` |
+
+## Patterns
 
 Match the repo's existing style (JUnit 5, AssertJ/Hamcrest, Mockito, Testcontainers if already present).
 

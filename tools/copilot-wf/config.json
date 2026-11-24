@@ -11,6 +11,29 @@
     "ship":    ["github/*"]
   },
 
+  "stacks": {
+    "_doc": "One entry per supported language/framework. Detection is deterministic: a stack matches if ANY rule matches (file exists, and contains the text if 'contains' is given). The stack's guidance lives in tools/copilot-wf/stacks/<name>/. To add a language, see tools/copilot-wf/stacks/README.md.",
+    "angular": {
+      "label": "Angular + TypeScript",
+      "side": "fe",
+      "detect": [{"file": "angular.json"}, {"file": "package.json", "contains": "\"@angular/core\""}]
+    },
+    "react": {
+      "label": "React + TypeScript",
+      "side": "fe",
+      "detect": [{"file": "package.json", "contains": "\"react\""}]
+    },
+    "spring-boot": {
+      "label": "Spring Boot (Java)",
+      "side": "be",
+      "detect": [
+        {"file": "pom.xml", "contains": "spring-boot"},
+        {"file": "build.gradle", "contains": "spring"},
+        {"file": "build.gradle.kts", "contains": "spring"}
+      ]
+    }
+  },
+
   "artifacts_dir": ".copilot-wf",
 
   "phase_sets": {

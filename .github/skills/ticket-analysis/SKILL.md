@@ -26,8 +26,12 @@ A vague or invented AC here becomes wrong code in Step 4 and a missed bug in Ste
 
 ## Steps
 
-1. **Ticket key and side.** Get the key (`[A-Z][A-Z0-9]+-\d+`) from the user. Decide the side:
-   `package.json` at repo root → `fe`; `pom.xml` / `build.gradle*` → `be`. If unclear, ask.
+1. **Ticket key and stack.** Get the key (`[A-Z][A-Z0-9]+-\d+`) from the user. Find the stack with code, not guesswork:
+   ```bash
+   python3 tools/copilot-wf/wf.py detect
+   ```
+   One stack → use it. Several (monorepo) → ask the user which one this ticket touches, or take it from the user's message.
+   None → ask the user, or continue with `--side fe|be` (generic guidance only).
 2. **Fetch.** Read `data_source` in `tools/copilot-wf/config.json`, then follow
    `references/fetch-mcp.md` or `references/fetch-scripts.md`.
    You need: type, status, summary, description, ACs, every comment, attachments list, linked issues,
@@ -35,9 +39,10 @@ A vague or invented AC here becomes wrong code in Step 4 and a missed bug in Ste
 3. **Classify** using `references/ticket-types.md` → one of `Story | Task | Bug | Spike`.
 4. **Start the workflow** (deterministic phase selection):
    ```bash
-   python3 tools/copilot-wf/wf.py init --ticket <KEY> --type <Type> --side <fe|be> [--figma]
+   python3 tools/copilot-wf/wf.py init --ticket <KEY> --type <Type> [--stack <stack>] [--figma]
    ```
-   Pass `--figma` only if a Figma link exists. Show the user the phase list it prints.
+   Pass `--stack` when you had to choose (monorepo), and `--figma` only if a Figma link exists. The side (fe/be) comes from
+   the stack. Show the user the phase list it prints.
 5. **Write** `.copilot-wf/<KEY>/01-requirements.md` using the template below.
 6. **Open questions.** If any open question would change *what* gets built, ask the user now and update the file.
    Minor questions can wait for the plan review.
@@ -53,7 +58,7 @@ A vague or invented AC here becomes wrong code in Step 4 and a missed bug in Ste
 
 ```markdown
 # <KEY>: <summary>
-Type: <Story|Task|Bug|Spike> (Jira: <original issue type>) · Side: <FE|BE> · Status: <status>
+Type: <Story|Task|Bug|Spike> (Jira: <original issue type>) · Stack: <stack> (<FE|BE>) · Status: <status>
 
 ## What needs to be done
 <2–5 sentences in plain language. For a Bug: expected vs actual behaviour + repro steps.>
