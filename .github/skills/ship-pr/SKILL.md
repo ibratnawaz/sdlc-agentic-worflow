@@ -44,8 +44,12 @@ before anything happens.
    Proceed? (yes / edit / cancel)
    ```
    Wait for the answer. Anything other than a clear yes → don't run anything.
-5. **Execute** (stop at the first error and report it; never retry with force):
+   On yes, record it: `python3 tools/copilot-wf/wf.py approve --ticket <KEY> --phase ship --note "<the user's exact words>"`.
+   (As a subagent: return the summary above as `approval_request` with `status: AWAITING_APPROVAL` and stop.
+   On the next call the task carries `USER APPROVAL:` and the orchestrator has already recorded it.)
+5. **Execute** (stop at the first error and report it; never retry with force). First, the code gate:
    ```bash
+   python3 tools/copilot-wf/wf.py check --ticket <KEY> --phase ship --approved   # exit 4 = no approval → stop
    git switch -c <branch>            # only if a new branch was approved
    git add <file1> <file2> …
    git commit -m "<subject>" -m "<body>"

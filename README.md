@@ -21,11 +21,13 @@ To learn *why* it's built this way, read **[LEARNING.md](LEARNING.md)**.
 │   ├── react-ts.instructions.md      applyTo **/*.ts,tsx
 │   └── spring-boot.instructions.md   applyTo **/*.java
 ├── agents/                     WHO does each step: model, tools, handoff buttons
+│   ├── wf-orchestrator.agent.md      v2: runs every phase as a subagent (clean context)
 │   └── wf-1-analyze … wf-6-ship.agent.md
 ├── skills/                     HOW each step is done: method, iron laws, templates
+│   ├── workflow-orchestration/       v2: the conductor's loop + phase-report contract
 │   ├── ticket-analysis/  figma-to-components/  implementation-plan/
 │   └── tdd-implementation/  code-review/  ship-pr/
-└── prompts/                    slash commands: /wf-start, /wf-status
+└── prompts/                    slash commands: /wf-run (orchestrated), /wf-start (step by step), /wf-status
 tools/copilot-wf/               deterministic code (no AI)
 ├── config.json                 phase sets, mcp/scripts switch, model tiers
 ├── wf.py                       state, gates, usage table, sync
@@ -47,13 +49,34 @@ tools/copilot-wf/               deterministic code (no AI)
    the servers differently, edit `mcp_tools` in `tools/copilot-wf/config.json`, then run `python3 tools/copilot-wf/wf.py sync`.
 5. Check the model names in `config.json → models.tiers` against your Copilot model picker, then run `wf.py sync`.
 
-## Use it
+## Use it: two modes
 
-**VS Code (frontend)**: in Copilot Chat run `/wf-start PROJ-1234 fe`, then click the handoff button at the end of each
-step (e.g. *Step 3 · Plan*). Or pick `wf-1-analyze` … `wf-6-ship` from the agent picker.
+### A. Orchestrated (v2, recommended): one chat, a clean context per phase
+`/wf-run PROJ-1234 fe` (or pick the **wf-orchestrator** agent and type `PROJ-1234 fe`).
 
-**IntelliJ (backend)**: select the `wf-1-analyze` agent in Copilot Chat and type `PROJ-1234 be`. At the end of each step,
-select the agent it names next (handoff buttons are a VS Code feature). `/wf-start` also works where prompt files are supported.
+The orchestrator runs each phase as a **subagent** in its own context window and only receives a short
+*phase report* back. You talk only to the orchestrator: it relays questions, asks you to approve the plan and the push,
+and shows a usage line after each phase. Interrupted? Run `/wf-run PROJ-1234 fe` again and it resumes from `wf.py status`.
+
+```
+you ⇄ wf-orchestrator  (holds only ~20-line reports)
+          ├─► wf-1-analyze   [own context] → 01-requirements.md
+          ├─► wf-2-design    [own context] → 02-design.md
+          ├─► wf-3-plan      [own context] → 03-plan.md ──⛔ you approve (wf.py approve)
+          ├─► wf-4-implement [own context] → code + tests ◄─┐ fix cycle (capped by wf.py)
+          ├─► wf-5-review    [own context] → 05-review.md ──┘
+          └─► wf-6-ship      [own context] → drafts ──⛔ you approve ──► commit / push / PR
+```
+
+### B. Step by step (v1 style): you drive each phase
+**VS Code:** `/wf-start PROJ-1234 fe`, then the handoff button at the end of each step.
+**IntelliJ:** pick `wf-1-analyze`, type `PROJ-1234 be`, then pick the agent each step names next.
+Tip: start a **new chat** for each step. The files in `.copilot-wf/` carry everything over, so you get a clean context per step.
+
+### IntelliJ and the orchestrator
+In VS Code, the `agents:` list in `wf-orchestrator.agent.md` is enforced. JetBrains/Copilot harnesses ignore that field and
+delegate by name, which the orchestrator's instructions already do ("run the `wf-3-plan` agent as a subagent…"). If your plugin
+version doesn't support subagents yet, use mode B.
 
 Anytime: `/wf-status PROJ-1234`, or run `python3 tools/copilot-wf/wf.py status --ticket PROJ-1234`.
 (On Windows use `python` or `py` instead of `python3`.)
@@ -92,4 +115,7 @@ python3 tools/copilot-wf/figma_fetch.py "https://www.figma.com/design/<key>/<nam
 - Credentials only from env vars; never printed; only sent to the host they belong to; HTTPS only.
 - Confluence links on other hosts are ignored. Attachments are downloaded only from your Jira host, images/text only, max 5 MB.
 - `wf.py check` blocks a phase until the earlier ones are done (e.g. no coding before the plan is approved).
+- Plan and ship approvals are recorded with your own words (`wf.py approve`). `done` refuses without one, and Step 6 runs
+  `check --approved` right before the first git command.
+- Review → fix loops are capped (`max_fix_cycles` in config). Then a human decides.
 - Step 6 shows one exact summary and does nothing until you say yes. No force-push, no `--no-verify`, no pushes to protected branches, no merging.

@@ -26,3 +26,9 @@ You are a skeptical reviewer who did **not** write this code. Your job is to fin
 2. Read `.github/skills/code-review/SKILL.md` and follow it exactly.
 3. You may **read and run tests**, but do not edit source files. Fixes go back to Step 4.
 4. End by running `wf.py done` (the skill gives the command) and **paste its usage table** in your reply.
+
+## When called by `wf-orchestrator` (the task starts with `[wf-orchestrator]`)
+You are a **subagent** in your own context window. Follow
+`.github/skills/workflow-orchestration/references/phase-report.md`. Never ask the user directly: return
+`NEEDS_INPUT` / `AWAITING_APPROVAL` / `CHANGES_REQUIRED` / `BLOCKED` instead. Your final message is the
+**PHASE REPORT** only, with no pasted usage table and no handoff advice.

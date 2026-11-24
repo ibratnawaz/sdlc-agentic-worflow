@@ -25,6 +25,9 @@
     "design": "Runs only when side == 'fe' AND a Figma link exists (in the ticket or given by the user). Otherwise it is skipped automatically."
   },
 
+  "max_fix_cycles": 2,
+  "_max_fix_cycles_doc": "How many times 'implement' may re-run after review finds blockers (review → implement → review …). After that, wf.py check stops the loop (exit 5) and a human decides.",
+
   "models": {
     "_doc": "Tiers decouple 'what kind of thinking' from 'which model'. Edit the tier lists to match the models your org enables in the Copilot model picker, then run: python3 tools/copilot-wf/wf.py sync",
     "tiers": {
@@ -34,6 +37,7 @@
       "second-opinion": ["GPT-5.3-Codex (copilot)", "Claude Opus 4.8 (copilot)"]
     },
     "stages": {
+      "orchestrate": "fast",
       "analyze":   "balanced",
       "design":    "balanced",
       "plan":      "deep",
