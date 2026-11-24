@@ -165,6 +165,24 @@ def missing_profile_files(stack: str, side: str, base: Path) -> list[str]:
     return [f for f in REQUIRED_PROFILE_FILES[side] if not (base / stack / f).is_file()]
 
 
+def installed_path(root: Path, stack: str) -> Path:
+    return root / ".github" / "instructions" / f"{stack}.instructions.md"
+
+
+def installed_status(cfg: dict, root: Path, base: Path) -> dict[str, str]:
+    """For every known stack: 'in-sync', 'drift' (installed copy ≠ source), or 'not-installed'."""
+    status = {}
+    for s in known_stacks(cfg):
+        dest, src = installed_path(root, s), base / s / "instructions.md"
+        if not dest.is_file():
+            status[s] = "not-installed"
+        elif src.is_file() and dest.read_text(encoding="utf-8") == src.read_text(encoding="utf-8"):
+            status[s] = "in-sync"
+        else:
+            status[s] = "drift"
+    return status
+
+
 def runs_of(state: dict, phase: str) -> int:
     return next((u.get("runs", 1) for u in state["usage"] if u["stage"] == phase), 0)
 
@@ -244,6 +262,13 @@ def cmd_init(a: argparse.Namespace) -> None:
         print(f"  skipped: {', '.join(skipped)}")
     if stack:
         print(f"  stack guidance: tools/copilot-wf/stacks/{stack}/")
+        st = installed_status(cfg, repo_root(), stacks_dir())[stack]
+        if st == "not-installed":
+            print(f"  ⚠ Copilot doesn't have the {stack} coding rules yet. Run once: "
+                  f"python3 tools/copilot-wf/wf.py use-stack {stack}")
+        elif st == "drift":
+            print(f"  ⚠ .github/instructions/{stack}.instructions.md has drifted from its profile. "
+                  f"Run: python3 tools/copilot-wf/wf.py stacks")
 
 
 def cmd_check(a: argparse.Namespace) -> None:
@@ -361,14 +386,23 @@ def cmd_detect(a: argparse.Namespace) -> None:
 
 
 def cmd_stacks(a: argparse.Namespace) -> None:
-    """List every configured stack and whether its profile folder is complete."""
+    """List every stack: is its profile complete, and is its installed copy in sync? Exit 1 on any problem (CI-friendly)."""
     cfg = load_config()
+    installed = installed_status(cfg, repo_root(), stacks_dir())
+    labels = {"in-sync": "installed, in sync", "not-installed": "not installed", "drift": "DRIFT"}
     bad = 0
     for s, prof in known_stacks(cfg).items():
         missing = missing_profile_files(s, prof["side"], stacks_dir())
-        bad += bool(missing)
-        print(f"{'✔' if not missing else '✖'} {s:<14} {prof['side']}  {prof['label']}"
+        problem = bool(missing) or installed[s] == "drift"
+        bad += problem
+        print(f"{'✖' if problem else '✔'} {s:<14} {prof['side']}  {prof['label']:<22}  {labels[installed[s]]}"
               + (f"  missing: {', '.join(missing)}" if missing else ""))
+    for s, st in installed.items():
+        if st == "drift":
+            print(f"\n  DRIFT: .github/instructions/{s}.instructions.md ≠ tools/copilot-wf/stacks/{s}/instructions.md\n"
+                  f"    • Someone edited the installed copy? Move those rules into the stack file, then:\n"
+                  f"        python3 tools/copilot-wf/wf.py use-stack {s} --force\n"
+                  f"    • Template upgraded? Review the change, then the same command picks up the new rules.")
     if bad:
         sys.exit(1)
 

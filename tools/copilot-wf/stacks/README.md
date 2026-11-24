@@ -51,4 +51,6 @@ A backend stack (e.g. `dotnet`, `fastapi`, `node-express`) is the same minus `de
   state libraries or styles because a profile mentions an alternative.
 - **One FE + one BE stack per repo is fine.** Two FE stacks in one repo (React *and* Angular) need narrower `applyTo` globs,
   e.g. `apps/admin/**/*.ts`, or they'll both claim every `.ts` file. `wf.py use-stack` warns you about this.
-- **Edit the profile, not the installed copy.** `wf.py use-stack` refuses to overwrite a hand-edited `.github/instructions/` copy.
+- **Edit the profile, not the installed copy.** `wf.py use-stack` refuses to overwrite a hand-edited `.github/instructions/` copy,
+  and `wf.py stacks` reports **DRIFT** (exit 1) whenever the installed copy differs from its profile. That happens after a hand
+  edit *or* after upgrading the template. Run it in CI. `wf.py init` also warns if the ticket's stack isn't installed yet.

@@ -115,16 +115,20 @@ class TestInitWithStack(RepoCase):
         self.assertIn("stack=none", out)
 
 
-class TestUseStack(RepoCase):
+class RealProfilesCase(RepoCase):
+    """Temp repo + the real stack profiles (no tests of its own)."""
+
     def setUp(self):
         super().setUp()
         self._orig_stacks = wf.stacks_dir
-        wf.stacks_dir = lambda: TOOLS / "stacks"  # real profiles, temp repo
+        wf.stacks_dir = lambda: TOOLS / "stacks"
 
     def tearDown(self):
         wf.stacks_dir = self._orig_stacks
         super().tearDown()
 
+
+class TestUseStack(RealProfilesCase):
     def test_installs_instructions_for_copilot(self):
         code, out = self.run_wf("use-stack", "angular")
         self.assertEqual(code, 0, out)
@@ -152,6 +156,60 @@ class TestUseStack(RepoCase):
         code, out = self.run_wf("use-stack", "angular", "spring-boot")
         self.assertEqual(code, 0, out)
         self.assertNotIn("WARNING", out)
+
+
+class TestDrift(RealProfilesCase):
+    """The installed copy in .github/instructions/ must match its source in stacks/<stack>/."""
+
+    def test_in_sync_passes(self):
+        self.run_wf("use-stack", "angular")
+        code, out = self.run_wf("stacks")
+        self.assertEqual(code, 0, out)
+        self.assertIn("in sync", out)
+
+    def test_hand_edited_copy_fails_and_names_the_fix(self):
+        self.run_wf("use-stack", "angular")
+        dest = self.tmp / ".github/instructions/angular.instructions.md"
+        dest.write_text(dest.read_text() + "\n- team rule added by hand\n")
+        code, out = self.run_wf("stacks")
+        self.assertEqual(code, 1, out)
+        self.assertIn("DRIFT", out)
+        self.assertIn("angular.instructions.md", out)
+        self.assertIn("use-stack angular", out)  # tells you how to resolve it
+
+    def test_updated_source_also_counts_as_drift(self):
+        # Simulate the template being upgraded: the source changes, the installed copy is now stale.
+        self.run_wf("use-stack", "angular")
+        fake_src = self.tmp / "stacks-copy"
+        shutil.copytree(TOOLS / "stacks", fake_src)
+        (fake_src / "angular/instructions.md").write_text(
+            (fake_src / "angular/instructions.md").read_text() + "\n- new rule in the template\n")
+        wf.stacks_dir = lambda: fake_src
+        code, out = self.run_wf("stacks")
+        self.assertEqual(code, 1, out)
+        self.assertIn("DRIFT", out)
+
+    def test_init_warns_when_detected_stack_is_not_installed(self):
+        self.write("angular.json", "{}")
+        code, out = self.run_wf("init", "--ticket", "NG-10", "--type", "Bug")
+        self.assertEqual(code, 0, out)  # a warning, not a blocker
+        self.assertIn("use-stack angular", out)
+
+    def test_init_is_quiet_when_installed(self):
+        self.write("angular.json", "{}")
+        self.run_wf("use-stack", "angular")
+        code, out = self.run_wf("init", "--ticket", "NG-11", "--type", "Bug")
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("use-stack", out)
+
+
+class TestThisRepoHasNoDrift(unittest.TestCase):
+    """Runs against the REAL repo. In a consuming repo, this is the CI guard that catches a stale or hand-edited copy."""
+
+    def test_installed_instructions_match_their_profiles(self):
+        drifted = [s for s, status in wf.installed_status(CFG, wf.repo_root(), wf.stacks_dir()).items()
+                   if status == "drift"]
+        self.assertEqual(drifted, [], "Run: python3 tools/copilot-wf/wf.py stacks  (it explains how to fix each one)")
 
 
 class TestProfilesAreComplete(unittest.TestCase):

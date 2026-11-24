@@ -55,6 +55,10 @@ tools/copilot-wf/               deterministic code (no AI)
    ```
    Supported: `react`, `angular`, `spring-boot`. Full-stack repo: `use-stack angular spring-boot`.
    Put your team's real conventions in `tools/copilot-wf/stacks/<stack>/`, not in the installed copy.
+   **Add this to CI** so a hand-edited or stale copy fails the build (exit 1, with the fix printed):
+   ```bash
+   python3 tools/copilot-wf/wf.py stacks
+   ```
    New language? Follow [tools/copilot-wf/stacks/README.md](tools/copilot-wf/stacks/README.md).
 4. Make the MCP server names match: the agents use `atlassian/*`, `figma/*`, `github/*`. If your MCP config names
    the servers differently, edit `mcp_tools` in `tools/copilot-wf/config.json`, then run `python3 tools/copilot-wf/wf.py sync`.

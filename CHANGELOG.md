@@ -11,6 +11,8 @@
   warns when two FE stacks overlap).
 - `wf.py init` auto-detects the stack (`--stack` for monorepos). Side comes from the stack. `--side` still works for repos
   without a profile. `state.json` and `status` now include `stack`.
+- **Drift check:** `wf.py stacks` also reports each installed copy as *in sync*, *not installed* or **DRIFT** (exit 1 → CI-friendly),
+  with the fix printed. `wf.py init` warns when the ticket's stack isn't installed. The `TestThisRepoHasNoDrift` test guards it in CI.
 - **Migration from v-2.0:** run `wf.py use-stack <your stack>` once, because `.github/instructions/` no longer ships pre-filled.
 
 ## v-2.0: orchestrator and context isolation
