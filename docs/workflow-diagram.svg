@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 835" width="1200" height="835" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 915" width="1200" height="915" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
   <title>Copilot full-stack workflow (v-2.0)</title>
   <desc>You talk to wf-orchestrator, which runs six phases as subagents with their own context windows: Analyze, Design, Plan, Implement, Review, Ship. You approve the plan and the push. Phases read and write files in .copilot-wf, fetch data from Jira, Confluence, Figma and GitHub via MCP or scripts, and are gated by wf.py and config.json.</desc>
 
@@ -38,22 +38,27 @@
     <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8e24aa"/></marker>
   </defs>
 
-  <rect width="1200" height="835" fill="#ffffff"/>
+  <rect width="1200" height="915" fill="#ffffff"/>
 
   <!-- ───────── Title ───────── -->
   <text x="35" y="42" class="t h1">Copilot full-stack workflow · v-2.0</text>
   <text x="1165" y="42" class="m s12" text-anchor="end">One Jira ticket → six phases → one pull request</text>
 
-  <!-- ───────── Row A: you ⇄ orchestrator ───────── -->
-  <rect x="35" y="70" width="140" height="70" rx="10" class="human"/>
-  <text x="105" y="100" class="t h2" text-anchor="middle">You</text>
-  <text x="105" y="120" class="m s11" text-anchor="middle">answer · approve</text>
+  <!-- ───────── Row 0: you — talk ONLY to the orchestrator ───────── -->
+  <rect x="35" y="56" width="250" height="52" rx="10" class="human"/>
+  <text x="55" y="79" class="t h2">You</text>
+  <text x="55" y="97" class="m s11">answer questions · approve plan and push</text>
+  <line x1="160" y1="112" x2="160" y2="146" class="ln" marker-start="url(#ag)" marker-end="url(#ag)"/>
+  <text x="305" y="79" class="red s12 b">Subagents never talk to you.</text>
+  <text x="305" y="97" class="m s12">Every question and approval goes You ⇄ orchestrator. The blue arrows below are orchestrator ⇄ subagent only.</text>
 
-  <line x1="179" y1="105" x2="221" y2="105" class="ln" marker-start="url(#ag)" marker-end="url(#ag)"/>
+  <!-- everything below is shifted down 80px to make room for Row 0 -->
+  <g transform="translate(0,80)">
 
-  <rect x="225" y="70" width="940" height="70" rx="10" class="orch"/>
-  <text x="245" y="97" class="t s12"><tspan class="h2">wf-orchestrator</tspan><tspan>   ·   start with </tspan><tspan class="mono">/wf-run PROJ-1234 fe</tspan><tspan>   ·   model: fast   ·   holds only short phase reports</tspan></text>
-  <text x="245" y="120" class="m s12">Delegates each phase to a subagent with its own clean context window · relays questions to you · records your approvals with wf.py</text>
+  <!-- ───────── Row A: orchestrator spans all six phases ───────── -->
+  <rect x="35" y="70" width="1130" height="70" rx="10" class="orch"/>
+  <text x="55" y="97" class="t s12"><tspan class="h2">wf-orchestrator</tspan><tspan>   ·   start with </tspan><tspan class="mono">/wf-run PROJ-1234 fe</tspan><tspan>   ·   model: fast   ·   holds only short phase reports   ·   </tspan><tspan class="b">the only agent that talks to you</tspan></text>
+  <text x="55" y="120" class="m s12">Delegates each phase to a subagent with its own clean context window · relays the subagent's questions to you · records your approvals with wf.py</text>
 
   <!-- delegate / report arrows (box centres: 120, 312, 504, 696, 888, 1080) -->
   <line x1="120"  y1="143" x2="120"  y2="187" class="lnb" marker-start="url(#ab)" marker-end="url(#ab)"/>
@@ -62,7 +67,7 @@
   <line x1="696"  y1="143" x2="696"  y2="187" class="lnb" marker-start="url(#ab)" marker-end="url(#ab)"/>
   <line x1="888"  y1="143" x2="888"  y2="187" class="lnb" marker-start="url(#ab)" marker-end="url(#ab)"/>
   <line x1="1080" y1="143" x2="1080" y2="187" class="lnb" marker-start="url(#ab)" marker-end="url(#ab)"/>
-  <text x="128" y="169" class="blue s11">task ↓  ·  phase report ↑</text>
+  <text x="128" y="169" class="blue s11">task ↓  ·  report ↑</text>
 
   <!-- plan gate -->
   <rect x="525" y="150" width="150" height="24" rx="12" class="human"/>
@@ -197,7 +202,9 @@
   <rect x="385" y="738" width="14" height="14" rx="3" class="src"/><text x="406" y="750" class="t s12">External data</text>
   <rect x="530" y="738" width="14" height="14" rx="3" class="files"/><text x="551" y="750" class="t s12">Files on disk</text>
   <rect x="670" y="738" width="14" height="14" rx="3" class="code"/><text x="691" y="750" class="t s12">Deterministic code</text>
+  <line x1="855" y1="745" x2="887" y2="745" class="lnb" marker-start="url(#ab)" marker-end="url(#ab)"/><text x="896" y="750" class="t s12">orchestrator ⇄ subagent (task / report)</text>
 
   <text x="35" y="786" class="t s12"><tspan class="b">Mode B (step by step):</tspan><tspan> no orchestrator. Pick wf-1 … wf-6 yourself (VS Code handoff buttons or IntelliJ agent picker), new chat per step.</tspan></text>
   <text x="35" y="806" class="m s12">Same files, same gates, same usage table. Only who moves to the next phase changes: you instead of wf-orchestrator.</text>
+  </g>
 </svg>
