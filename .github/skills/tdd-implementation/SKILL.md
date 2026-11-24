@@ -27,6 +27,9 @@ Red → Green → Refactor, **one AC at a time**, in the order of the plan.
 ## Steps
 
 1. **Read** `.copilot-wf/<KEY>/03-plan.md` (and `02-design.md` for FE).
+   **Fix cycle** (asked to address review findings): also read `.copilot-wf/<KEY>/05-review.md`. For each `blocker`/`major`,
+   write or tighten a test that exposes it (red), then fix it (green). Append a *Fix cycle N* section to `04-implementation.md`.
+   `wf.py check` caps the number of cycles (exit 5 → stop and report `BLOCKED`).
 2. **Find the commands** (don't guess):
    - FE: `package.json` scripts → test, lint, type-check (e.g. `npm test -- <file>`, `npm run lint`, `npx tsc --noEmit`).
    - BE: `./mvnw test -Dtest=<Class>` / `./gradlew test --tests <Class>`; full: `./mvnw verify` / `./gradlew check`.

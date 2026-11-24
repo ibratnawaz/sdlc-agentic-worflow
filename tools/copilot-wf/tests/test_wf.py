@@ -74,7 +74,7 @@ class TestSyncAgentText(unittest.TestCase):
 class TestUsageTable(unittest.TestCase):
     def test_empty_credits_total_is_blank_not_stars(self):
         out = wf.render_usage_table([{"stage": "analyze", "est_read": 1, "est_written": 2, "credits": None}])
-        self.assertIn("| **Total** | **1** | **2** |  |", out)
+        self.assertIn("| **Total** | | **1** | **2** |  |", out)
         self.assertNotIn("****", out)
 
     def test_credits_total(self):
@@ -114,8 +114,13 @@ class TestEndToEnd(unittest.TestCase):
         (self.tmp / "req.md").write_text("x" * 400)
         code, out = self.run_wf("done", "--ticket", "ABC-1", "--phase", "analyze", "--wrote", "req.md")
         self.assertEqual(code, 0, out)
-        self.assertIn("| analyze | 0 | 100 |", out)  # 400 chars / 4
-        self.run_wf("done", "--ticket", "ABC-1", "--phase", "plan")
+        self.assertIn("| analyze | 1 | 0 | 100 |", out)  # 1 run, 400 chars / 4
+        code, out = self.run_wf("done", "--ticket", "ABC-1", "--phase", "plan")
+        self.assertEqual(code, 4, out)  # no approval recorded yet
+        code, out = self.run_wf("approve", "--ticket", "ABC-1", "--phase", "plan", "--note", "approved, go")
+        self.assertEqual(code, 0, out)
+        code, out = self.run_wf("done", "--ticket", "ABC-1", "--phase", "plan")
+        self.assertEqual(code, 0, out)
 
         code, _ = self.run_wf("check", "--ticket", "ABC-1", "--phase", "implement")
         self.assertEqual(code, 0)
@@ -131,6 +136,81 @@ class TestEndToEnd(unittest.TestCase):
         self.run_wf("init", "--ticket", "ABC-2", "--type", "Story", "--side", "be")
         code, out = self.run_wf("check", "--ticket", "ABC-2", "--phase", "design")
         self.assertEqual(code, 3, out)
+
+
+    def _to_review(self, ticket="ABC-3"):
+        self.run_wf("init", "--ticket", ticket, "--type", "Bug", "--side", "be")
+        self.run_wf("done", "--ticket", ticket, "--phase", "analyze")
+        self.run_wf("approve", "--ticket", ticket, "--phase", "plan", "--note", "ok")
+        self.run_wf("done", "--ticket", ticket, "--phase", "plan")
+        return ticket
+
+    def test_approve_requires_the_users_words(self):
+        t = self._to_review()
+        code, out = self.run_wf("approve", "--ticket", t, "--phase", "ship", "--note", "   ")
+        self.assertEqual(code, 2, out)  # ship can't be approved before implement/review are done
+        code, out = self.run_wf("approve", "--ticket", t, "--phase", "plan", "--note", "   ")
+        self.assertEqual(code, 1, out)  # empty note rejected
+
+    def test_ship_needs_approval_to_execute_and_complete(self):
+        t = self._to_review()
+        self.run_wf("done", "--ticket", t, "--phase", "implement")
+        self.run_wf("done", "--ticket", t, "--phase", "review")
+        code, _ = self.run_wf("check", "--ticket", t, "--phase", "ship")
+        self.assertEqual(code, 0)  # may start drafting
+        code, out = self.run_wf("check", "--ticket", t, "--phase", "ship", "--approved")
+        self.assertEqual(code, 4, out)  # may not execute git yet
+        code, out = self.run_wf("done", "--ticket", t, "--phase", "ship")
+        self.assertEqual(code, 4, out)
+        self.run_wf("approve", "--ticket", t, "--phase", "ship", "--note", "yes, ship it")
+        code, _ = self.run_wf("check", "--ticket", t, "--phase", "ship", "--approved")
+        self.assertEqual(code, 0)
+        code, out = self.run_wf("status", "--ticket", t)
+        self.assertIn('approved: "yes, ship it"', out)
+
+    def test_fix_cycles_are_capped_and_usage_accumulates(self):
+        t = self._to_review()
+        (self.tmp / "f.md").write_text("y" * 40)  # 10 tokens per run
+        for _ in range(3):  # first run + 2 fix cycles (max_fix_cycles = 2)
+            code, out = self.run_wf("check", "--ticket", t, "--phase", "implement")
+            self.assertEqual(code, 0, out)
+            self.run_wf("done", "--ticket", t, "--phase", "implement", "--wrote", "f.md")
+        code, out = self.run_wf("check", "--ticket", t, "--phase", "implement")
+        self.assertEqual(code, 5, out)  # 4th run refused → human decides
+        code, out = self.run_wf("status", "--ticket", t)
+        self.assertIn("| implement | 3 | 0 | 30 |", out)  # costs added up, not overwritten
+
+    def test_status_reports_next_phase_for_resume(self):
+        t = self._to_review()
+        code, out = self.run_wf("status", "--ticket", t)
+        self.assertIn("next: implement", out)
+
+    def test_v1_state_without_approvals_still_loads(self):
+        self.run_wf("init", "--ticket", "ABC-4", "--type", "Spike", "--side", "fe")
+        sp = self.tmp / ".copilot-wf" / "ABC-4" / "state.json"
+        s = json.loads(sp.read_text()); s.pop("approvals"); sp.write_text(json.dumps(s))
+        code, out = self.run_wf("status", "--ticket", "ABC-4")
+        self.assertEqual(code, 0, out)
+
+
+class TestOrchestratorFiles(unittest.TestCase):
+    AGENTS = TOOLS.parent.parent / ".github" / "agents"
+
+    def test_sync_manages_the_orchestrator(self):
+        self.assertIn(("orchestrate", "wf-orchestrator.agent.md"), wf.agent_files())
+        self.assertIn("orchestrate", CFG["models"]["stages"])
+
+    def test_orchestrator_can_only_delegate_to_phase_agents(self):
+        text = (self.AGENTS / "wf-orchestrator.agent.md").read_text(encoding="utf-8")
+        self.assertIn("'agent'", text)          # needs the subagent tool
+        self.assertNotIn("'edit'", text)        # must never write files itself
+        for i, phase in enumerate(wf.ALL_PHASES, start=1):
+            self.assertIn(f"'wf-{i}-{phase}'", text)
+            self.assertTrue((self.AGENTS / f"wf-{i}-{phase}.agent.md").exists())
+
+    def test_every_phase_agent_knows_subagent_mode(self):
+        for f in self.AGENTS.glob("wf-[1-6]-*.agent.md"):
+            self.assertIn("[wf-orchestrator]", f.read_text(encoding="utf-8"), f.name)
 
 
 if __name__ == "__main__":

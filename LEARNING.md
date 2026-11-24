@@ -145,3 +145,61 @@ The same files work in both. Differences to know:
    (This turns a prompt rule into a code rule.)
 5. **New skill.** Write a `sonar-fix` or `api-contract-check` skill. Write the `description` first (when it should and shouldn't trigger).
 6. **A/B the models.** Run Step 5 with two different models on the same diff. Which finds more *real* issues per credit?
+7. **(v2) Parallel reviewers.** Make the orchestrator run two read-only reviewers in parallel (code review + an accessibility-only
+   reviewer). It's safe because neither writes source files. Merge their findings into `05-review.md`.
+8. **(v2) Watch the contexts.** Run one ticket in mode A and one in mode B (same chat throughout). Compare the context circle at the end.
+
+---
+
+## 8. (v2) Orchestrator and context isolation
+
+### The problem v1 had
+With handoff buttons, every phase continues in **the same chat**. By Step 5 the context holds the ticket, Confluence, the Figma
+outline, the plan, every test run and the diff. That costs tokens on every turn (history is re-sent), and the model gets less
+focused as the window fills.
+
+### The fix: a conductor plus subagents
+```
+                 ┌────────────── main context (stays small) ──────────────┐
+ you ⇄ wf-orchestrator: "phase report: DONE, 6 ACs, 2 conflicts, usage …"
+                 └──────┬───────────────────────────────────────────────────┘
+                        │ delegate (task message only, no chat history)
+         ┌──────────────┼───────────────┬───────────────┐
+   [wf-1 context]  [wf-3 context]  [wf-4 context]   …   each starts empty, reads
+   reads Jira      reads 01/02     reads 03, runs        files, writes files,
+   writes 01-*.md  writes 03-*.md  tests, edits code     returns ≤ 20 lines
+```
+Three ideas make it work:
+1. **Files are the memory.** Subagents are stateless (each call starts fresh), so everything they need is on disk:
+   `state.json` + `0x-*.md`. That's also why **resume** works. The orchestrator just reads `wf.py status`.
+2. **A contract for what comes back.** The *phase report*
+   (`.github/skills/workflow-orchestration/references/phase-report.md`) caps what enters the main context: status, artifact path, ≤ 5 bullets,
+   questions, usage. No diffs, no logs, no artifact copies.
+3. **Only the orchestrator talks to you.** The docs don't say whether a subagent can stop and ask the user, so the design
+   doesn't depend on it. Subagents return `NEEDS_INPUT` / `AWAITING_APPROVAL`, the orchestrator asks you, and then it calls the
+   subagent again with your answer quoted.
+
+### Which is the orchestrator now?
+| Job | v1 | v2 |
+|---|---|---|
+| Phase order, skipping, gates | `wf.py` | `wf.py` (unchanged) |
+| Moving to the next phase | **you** (handoff/picker) | **`wf-orchestrator`** (an AI conductor) |
+| Approvals | you, in chat | you, recorded by `wf.py approve` with your words |
+| Fix loop after review | you | orchestrator, capped by `wf.py` (`max_fix_cycles`) |
+
+The orchestrator is AI, but it **cannot bypass the code gates**: `done --phase plan` and `check --phase ship --approved` refuse without
+a recorded approval. An approval is a quoted note in `state.json`, which gives you an audit trail, not cryptographic proof. That's why the
+skill's iron laws forbid approving on the user's behalf, and why you should glance at `wf.py status` before shipping.
+
+### Cost: honest notes
+- Subagents make **their own model requests**. Isolation keeps the *main* context small. It doesn't make the work itself free.
+- Each subagent re-reads its input files. That's cheap here, because the artifacts are small by design.
+- The orchestrator uses the **fast** tier: it routes and relays, and its context is the one that lives longest.
+- To see real per-subagent credits in VS Code, enable `chat.subagents.showCreditUsage`, then log them with `wf.py credits`.
+- `implement` and `review` may now run more than once. The usage table has a **Runs** column, and costs add up instead of being overwritten.
+
+### Safety rules specific to subagents
+- **One writer at a time.** Separate contexts still share the same files. Phases run sequentially. Only read-only work
+  (e.g. two reviewers) may run in parallel.
+- **No recursion.** The orchestrator has `disable-model-invocation: true`. Phase agents don't have the `agent` tool, so they can't spawn subagents.
+- **Least privilege.** The orchestrator has no `edit` tool, and its instructions limit it to `wf.py` commands.

@@ -30,8 +30,10 @@ reviewer see **which test proves each AC**.
 4. **Write** `.copilot-wf/<KEY>/03-plan.md`.
 5. **Ask for review.** Show a short summary (≤ 15 lines: approach, files, AC → test count, risks, open questions)
    and ask: **"Approve this plan, or tell me what to change?"** Then stop.
-6. **After explicit approval only:**
+   (As a subagent: return this as `status: AWAITING_APPROVAL` and stop. The orchestrator does step 6.)
+6. **After explicit approval only.** Record the user's own words, then complete the phase (`done` refuses without the approval):
    ```bash
+   python3 tools/copilot-wf/wf.py approve --ticket <KEY> --phase plan --note "<the user's exact words>"
    python3 tools/copilot-wf/wf.py done --ticket <KEY> --phase plan \
      --read .copilot-wf/<KEY>/01-requirements.md [.copilot-wf/<KEY>/02-design.md] \
      --wrote .copilot-wf/<KEY>/03-plan.md
