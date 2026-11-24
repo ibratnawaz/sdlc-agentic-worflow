@@ -25,7 +25,8 @@ You are reviewing someone else's work. Find what is **wrong or missing**. "Looks
    git diff origin/main...HEAD; git diff; git status --short   # base branch may be develop/master. Check
    ```
 2. **Run** the tests for the changed area and the full suite, plus lint/type-check. Record the results.
-3. **Check** each item in `references/review-checklist.md`. For each AC, ask:
+3. **Check** each item in `references/review-checklist.md` **and** in `tools/copilot-wf/stacks/<stack>/review.md`
+   (stack from `wf.py status`). For each AC, ask:
    *"If I deleted the code for this AC, which test would fail?"* If the answer is none, that's a finding.
 4. **Write** `.copilot-wf/<KEY>/05-review.md` (template below).
 5. **Verdict:**

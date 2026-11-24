@@ -21,8 +21,10 @@ reviewer see **which test proves each AC**.
 
 1. Read `01-requirements.md` and, if it exists, `02-design.md` in `.copilot-wf/<KEY>/`.
 2. **Explore** the repo: entry points, the closest existing feature, test setup, naming conventions.
-   - FE: routing, state/data-fetching pattern, test runner + a11y test helper.
-   - BE: controller/service/repository layout, DTO/validation style, exception handling, test slices in use.
+   Read `tools/copilot-wf/stacks/<stack>/testing.md` (test levels, runner, commands) and `…/review.md` (the architecture
+   the reviewer will hold you to), so the plan's AC → test table uses this stack's real test levels and file names.
+   The ticket's stack comes from `python3 tools/copilot-wf/wf.py status --ticket <KEY>` (`stack=`).
+   If it says `stack=none`, there's no profile: use the repo's own conventions and say so in your output.
 3. **Pick the template by type** (`wf.py status --ticket <KEY>` shows it):
    - `Story` / `Task` → plan template below.
    - `Bug` → plan template, and fill *Root cause* with evidence (`file:line`). The first test is a regression test that fails today.

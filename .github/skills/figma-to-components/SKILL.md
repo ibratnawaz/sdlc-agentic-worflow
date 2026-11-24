@@ -31,8 +31,10 @@ and interaction intent. It does not authorise literal hex colours, pixel spacing
      Ask for one node, not the whole file.
    - `scripts` — run `python3 tools/copilot-wf/figma_fetch.py "<figma-url>" --ticket <KEY> --image`
      and read `.copilot-wf/<KEY>/source/figma.md` (plus `figma.png` if you need to see it).
-3. **Inventory the repo.** Find the shared component library (look for a `components/`/`ui/` folder, a
-   design-system package in `package.json`, Storybook stories) and the token files. Open the candidates.
+3. **Inventory the repo.** Read `tools/copilot-wf/stacks/<stack>/design.md`. It says where this stack keeps shared
+   components and tokens, and how Figma variants/slots/events map to its component API. Then find and open the candidates.
+   The ticket's stack comes from `python3 tools/copilot-wf/wf.py status --ticket <KEY>` (`stack=`).
+   If it says `stack=none`, there's no profile: use the repo's own conventions and say so in your output.
 4. **Map** every meaningful Figma element using the table below. Order of preference:
    **reuse as-is → reuse with variant/props → compose from existing → new** (justify every "new").
 5. **States and a11y.** For each interactive element, list states (default, hover, focus, disabled, loading,
@@ -56,9 +58,10 @@ Figma: <link to frame>
 ## Component decisions
 | Figma element | Decision | Component (path) | Props / variant | Notes |
 |---|---|---|---|---|
-| Primary CTA "Continue" | Reuse | `src/ui/Button/Button.tsx` | `variant="primary"` | |
-| Account summary card | Compose | `Card` + `Stack` + `Text` | | |
-| Allocation donut | **New** | `src/features/x/AllocationChart.tsx` (proposed) | `data, label` | No chart exists — confirmed by searching `chart`, `donut`, `pie` |
+| Primary CTA "Continue" | Reuse | `<path to existing button>` | `<variant in this stack's syntax>` | |
+| Account summary card | Compose | `<card>` + `<layout>` + `<text>` | | |
+| Allocation donut | **New** | `<proposed path>` (proposed) | `<inputs/props>` | No chart exists — confirmed by searching `chart`, `donut`, `pie` |
+(See `tools/copilot-wf/stacks/<stack>/design.md` for real examples in this stack's syntax.)
 
 ## Tokens used
 | Figma value | Token | Note |

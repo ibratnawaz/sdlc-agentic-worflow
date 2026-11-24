@@ -12,6 +12,9 @@ This script does what must ALWAYS be true and should never be left to a prompt:
   credits      record the REAL credits you read from the IDE (to compare MCP vs scripts)
   status       show where a ticket is (also used by the orchestrator to resume)
   sync         apply config.json (model tiers + mcp/scripts mode) to .github/agents/*.agent.md
+  detect       which stack(s) is this repo? (config.json → stacks → detect rules)
+  stacks       list stack profiles and whether each folder is complete
+  use-stack    install a stack's Copilot instructions into .github/instructions/
 
 Exit codes: 0 ok · 1 usage/input error · 2 earlier phase missing · 3 phase skipped for this type
             4 approval missing · 5 fix-cycle limit reached
@@ -109,6 +112,77 @@ def missing_before(state: dict, phase: str) -> list[str]:
     return [p for p in earlier if p not in state["completed"]]
 
 
+def stacks_dir() -> Path:
+    """Where stack profiles live: tools/copilot-wf/stacks/<stack>/."""
+    return HERE / "stacks"
+
+
+def known_stacks(cfg: dict) -> dict:
+    return {k: v for k, v in cfg.get("stacks", {}).items() if not k.startswith("_")}
+
+
+def detect_stacks(cfg: dict, root: Path) -> list[str]:
+    """Every configured stack whose detection rules match files in `root`, in config order."""
+    found = []
+    for name, prof in known_stacks(cfg).items():
+        for rule in prof.get("detect", []):
+            f = root / rule["file"]
+            if f.is_file() and rule.get("contains", "") in f.read_text(encoding="utf-8", errors="ignore"):
+                found.append(name)
+                break
+    return found
+
+
+def resolve_stack(cfg: dict, root: Path, stack: str | None, side: str | None) -> tuple[str | None, str]:
+    """Decide (stack, side). Raises ValueError with a message telling the user what to pass."""
+    stacks = known_stacks(cfg)
+    if stack:
+        if stack not in stacks:
+            raise ValueError(f"Unknown stack '{stack}'. Known: {', '.join(stacks)} "
+                             "(add one: tools/copilot-wf/stacks/README.md)")
+        if side and side != stacks[stack]["side"]:
+            raise ValueError(f"Stack '{stack}' is {stacks[stack]['side']}, not {side}.")
+        return stack, stacks[stack]["side"]
+    found = detect_stacks(cfg, root)
+    if side:
+        found = [s for s in found if stacks[s]["side"] == side]
+    if len(found) == 1:
+        return found[0], stacks[found[0]]["side"]
+    if len(found) > 1:
+        raise ValueError(f"Several stacks detected ({', '.join(found)}). Pass --stack <one of them>.")
+    if side:  # legacy (v1/v2) behaviour: no profile, generic guidance only
+        return None, side
+    raise ValueError("No known stack detected. Pass --stack <name> (or --side fe|be for generic guidance).")
+
+
+REQUIRED_PROFILE_FILES = {
+    "fe": ["instructions.md", "testing.md", "review.md", "design.md"],
+    "be": ["instructions.md", "testing.md", "review.md"],
+}
+
+
+def missing_profile_files(stack: str, side: str, base: Path) -> list[str]:
+    return [f for f in REQUIRED_PROFILE_FILES[side] if not (base / stack / f).is_file()]
+
+
+def installed_path(root: Path, stack: str) -> Path:
+    return root / ".github" / "instructions" / f"{stack}.instructions.md"
+
+
+def installed_status(cfg: dict, root: Path, base: Path) -> dict[str, str]:
+    """For every known stack: 'in-sync', 'drift' (installed copy ≠ source), or 'not-installed'."""
+    status = {}
+    for s in known_stacks(cfg):
+        dest, src = installed_path(root, s), base / s / "instructions.md"
+        if not dest.is_file():
+            status[s] = "not-installed"
+        elif src.is_file() and dest.read_text(encoding="utf-8") == src.read_text(encoding="utf-8"):
+            status[s] = "in-sync"
+        else:
+            status[s] = "drift"
+    return status
+
+
 def runs_of(state: dict, phase: str) -> int:
     return next((u.get("runs", 1) for u in state["usage"] if u["stage"] == phase), 0)
 
@@ -170,21 +244,31 @@ def cmd_init(a: argparse.Namespace) -> None:
     cfg = load_config()
     t = validate_ticket(a.ticket)
     try:
-        phases = select_phases(cfg, a.type, a.side, a.figma)
+        stack, side = resolve_stack(cfg, repo_root(), a.stack, a.side)
+        phases = select_phases(cfg, a.type, side, a.figma)
     except ValueError as e:
         fail(str(e))
     if state_path(cfg, t).exists() and not a.force:
         fail(f"{t} already started. Use 'status', or --force to restart.")
     state = {
-        "ticket": t, "type": a.type, "side": a.side, "has_figma": a.figma,
+        "ticket": t, "type": a.type, "stack": stack, "side": side, "has_figma": a.figma,
         "data_source": cfg["data_source"], "phases": phases, "completed": [],
         "approvals": {}, "usage": [], "created_at": now(),
     }
     write_state(cfg, t, state)
     skipped = [p for p in ALL_PHASES if p not in phases]
-    print(f"✔ {t} ({a.type}, {a.side.upper()}) → phases: {' → '.join(phases)}")
+    print(f"✔ {t} ({a.type}, {stack or 'no stack profile'}, {side.upper()}) → phases: {' → '.join(phases)}")
     if skipped:
         print(f"  skipped: {', '.join(skipped)}")
+    if stack:
+        print(f"  stack guidance: tools/copilot-wf/stacks/{stack}/")
+        st = installed_status(cfg, repo_root(), stacks_dir())[stack]
+        if st == "not-installed":
+            print(f"  ⚠ Copilot doesn't have the {stack} coding rules yet. Run once: "
+                  f"python3 tools/copilot-wf/wf.py use-stack {stack}")
+        elif st == "drift":
+            print(f"  ⚠ .github/instructions/{stack}.instructions.md has drifted from its profile. "
+                  f"Run: python3 tools/copilot-wf/wf.py stacks")
 
 
 def cmd_check(a: argparse.Namespace) -> None:
@@ -276,7 +360,8 @@ def cmd_credits(a: argparse.Namespace) -> None:
 def cmd_status(a: argparse.Namespace) -> None:
     cfg = load_config()
     s = read_state(cfg, validate_ticket(a.ticket))
-    print(f"{s['ticket']}  type={s['type']}  side={s['side']}  data_source={s['data_source']}")
+    print(f"{s['ticket']}  type={s['type']}  stack={s.get('stack') or 'none'}  side={s['side']}  "
+          f"data_source={s['data_source']}")
     for p in s["phases"]:
         mark = "✔" if p in s["completed"] else "·"
         appr = f"  (approved: \"{s['approvals'][p]['note']}\")" if p in s["approvals"] else ""
@@ -286,6 +371,67 @@ def cmd_status(a: argparse.Namespace) -> None:
     if s["usage"]:
         print()
         print(render_usage_table(s["usage"]))
+
+
+def cmd_detect(a: argparse.Namespace) -> None:
+    cfg = load_config()
+    stacks = known_stacks(cfg)
+    found = detect_stacks(cfg, repo_root())
+    if not found:
+        fail("No known stack detected. Known: " + ", ".join(stacks) + " (add one: tools/copilot-wf/stacks/README.md)")
+    for s in found:
+        missing = missing_profile_files(s, stacks[s]["side"], stacks_dir())
+        note = f"  ⚠ profile incomplete, missing: {', '.join(missing)}" if missing else ""
+        print(f"{s}  side={stacks[s]['side']}  ({stacks[s]['label']}){note}")
+
+
+def cmd_stacks(a: argparse.Namespace) -> None:
+    """List every stack: is its profile complete, and is its installed copy in sync? Exit 1 on any problem (CI-friendly)."""
+    cfg = load_config()
+    installed = installed_status(cfg, repo_root(), stacks_dir())
+    labels = {"in-sync": "installed, in sync", "not-installed": "not installed", "drift": "DRIFT"}
+    bad = 0
+    for s, prof in known_stacks(cfg).items():
+        missing = missing_profile_files(s, prof["side"], stacks_dir())
+        problem = bool(missing) or installed[s] == "drift"
+        bad += problem
+        print(f"{'✖' if problem else '✔'} {s:<14} {prof['side']}  {prof['label']:<22}  {labels[installed[s]]}"
+              + (f"  missing: {', '.join(missing)}" if missing else ""))
+    for s, st in installed.items():
+        if st == "drift":
+            print(f"\n  DRIFT: .github/instructions/{s}.instructions.md ≠ tools/copilot-wf/stacks/{s}/instructions.md\n"
+                  f"    • Someone edited the installed copy? Move those rules into the stack file, then:\n"
+                  f"        python3 tools/copilot-wf/wf.py use-stack {s} --force\n"
+                  f"    • Template upgraded? Review the change, then the same command picks up the new rules.")
+    if bad:
+        sys.exit(1)
+
+
+def cmd_use_stack(a: argparse.Namespace) -> None:
+    """Install a stack's Copilot instructions into .github/instructions/ (the copy Copilot actually loads)."""
+    cfg = load_config()
+    stacks = known_stacks(cfg)
+    dest_dir = repo_root() / ".github" / "instructions"
+    for s in a.stacks:
+        if s not in stacks:
+            fail(f"Unknown stack '{s}'. Known: {', '.join(stacks)}")
+        src = stacks_dir() / s / "instructions.md"
+        if not src.is_file():
+            fail(f"{src} is missing")
+        dest = dest_dir / f"{s}.instructions.md"
+        if dest.exists() and dest.read_text(encoding="utf-8") != src.read_text(encoding="utf-8") and not a.force:
+            fail(f"{dest.relative_to(repo_root())} differs from the stack profile (edited by hand?). "
+                 f"Put team rules in tools/copilot-wf/stacks/{s}/instructions.md instead, or re-run with --force.")
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+        print(f"✔ {s}: installed {dest.relative_to(repo_root())}")
+    # Two active stacks on the same side (e.g. react + angular) would both claim *.ts files.
+    active = [s for s in stacks if (dest_dir / f"{s}.instructions.md").exists()]
+    for side in ("fe", "be"):
+        same = [s for s in active if stacks[s]["side"] == side]
+        if len(same) > 1:
+            print(f"⚠ WARNING: {len(same)} {side} stacks active ({', '.join(same)}). Their applyTo globs may overlap. "
+                  f"Delete the .github/instructions/<stack>.instructions.md file you don't use.")
 
 
 def sync_agent_text(text: str, models: list[str], mcp_tools: list[str]) -> str:
@@ -339,7 +485,8 @@ def main(argv: list[str] | None = None) -> None:
 
     p = sub.add_parser("init");  p.set_defaults(fn=cmd_init)
     p.add_argument("--ticket", required=True); p.add_argument("--type", required=True)
-    p.add_argument("--side", required=True, choices=["fe", "be"])
+    p.add_argument("--stack", help="stack profile (default: auto-detect from repo files)")
+    p.add_argument("--side", choices=["fe", "be"], help="optional; derived from the stack")
     p.add_argument("--figma", action="store_true", help="a Figma link exists for this ticket")
     p.add_argument("--force", action="store_true")
 
@@ -365,6 +512,12 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--ticket", required=True)
 
     p = sub.add_parser("sync"); p.set_defaults(fn=cmd_sync)
+
+    p = sub.add_parser("detect"); p.set_defaults(fn=cmd_detect)
+    p = sub.add_parser("stacks"); p.set_defaults(fn=cmd_stacks)
+    p = sub.add_parser("use-stack"); p.set_defaults(fn=cmd_use_stack)
+    p.add_argument("stacks", nargs="+", help="e.g. angular, or angular spring-boot for a full-stack repo")
+    p.add_argument("--force", action="store_true", help="overwrite a hand-edited installed copy")
 
     a = ap.parse_args(argv)
     a.fn(a)

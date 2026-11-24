@@ -1,7 +1,7 @@
 ---
 name: wf-1-analyze
 description: "Step 1 — Read a Jira ticket (type, ACs, description, comments, attachments) plus any linked Confluence pages and finalise what actually needs to be done."
-argument-hint: "Ticket key, e.g. PROJ-1234 — and say fe or be"
+argument-hint: "Ticket key, e.g. PROJ-1234 (optionally a stack: angular, react, spring-boot)"
 tools: ['read', 'search', 'edit', 'execute', 'todo', 'atlassian/*']
 model:
   - Claude Sonnet 4.6 (copilot)

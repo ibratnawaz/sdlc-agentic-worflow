@@ -1,0 +1,210 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 915" width="1200" height="915" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title>Copilot full-stack workflow (v-2.0)</title>
+  <desc>You talk to wf-orchestrator, which runs six phases as subagents with their own context windows: Analyze, Design, Plan, Implement, Review, Ship. You approve the plan and the push. Phases read and write files in .copilot-wf, fetch data from Jira, Confluence, Figma and GitHub via MCP or scripts, and are gated by wf.py and config.json.</desc>
+
+  <style>
+    .t   { fill: #202124; }
+    .m   { fill: #5f6368; }
+    .h1  { font-size: 20px; font-weight: 700; }
+    .h2  { font-size: 14px; font-weight: 700; }
+    .s12 { font-size: 12px; }
+    .s11 { font-size: 11px; }
+    .s10 { font-size: 10px; }
+    .mono { font-family: 'SFMono-Regular', Menlo, Consolas, monospace; }
+    .b   { font-weight: 700; }
+    .agent { fill: #e8f0fe; stroke: #1a73e8; stroke-width: 1.5; }
+    .orch  { fill: #d2e3fc; stroke: #1a73e8; stroke-width: 2; }
+    .human { fill: #fdecea; stroke: #c62828; stroke-width: 1.5; }
+    .src   { fill: #f3e8fd; stroke: #8e24aa; stroke-width: 1.5; }
+    .files { fill: #fef7e0; stroke: #e37400; stroke-width: 1.5; }
+    .code  { fill: #e6f4ea; stroke: #188038; stroke-width: 1.5; }
+    .codebg{ fill: #f6fbf7; stroke: #188038; stroke-width: 1.5; stroke-dasharray: 6 4; }
+    .blue  { fill: #1a73e8; }
+    .red   { fill: #c62828; }
+    .amber { fill: #b06000; }
+    .purple{ fill: #8e24aa; }
+    .green { fill: #188038; }
+    .ln    { stroke: #5f6368; stroke-width: 1.5; fill: none; }
+    .lnb   { stroke: #1a73e8; stroke-width: 1.5; fill: none; }
+    .lnr   { stroke: #c62828; stroke-width: 1.5; fill: none; stroke-dasharray: 4 3; }
+    .lna   { stroke: #e37400; stroke-width: 1.5; fill: none; stroke-dasharray: 4 3; }
+    .lnp   { stroke: #8e24aa; stroke-width: 1.5; fill: none; }
+  </style>
+
+  <defs>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5f6368"/></marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a73e8"/></marker>
+    <marker id="aa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e37400"/></marker>
+    <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8e24aa"/></marker>
+  </defs>
+
+  <rect width="1200" height="915" fill="#ffffff"/>
+
+  <!-- ───────── Title ───────── -->
+  <text x="35" y="42" class="t h1">Copilot full-stack workflow · v-2.0</text>
+  <text x="1165" y="42" class="m s12" text-anchor="end">One Jira ticket → six phases → one pull request</text>
+
+  <!-- ───────── Row 0: you — talk ONLY to the orchestrator ───────── -->
+  <rect x="35" y="56" width="250" height="52" rx="10" class="human"/>
+  <text x="55" y="79" class="t h2">You</text>
+  <text x="55" y="97" class="m s11">answer questions · approve plan and push</text>
+  <line x1="160" y1="112" x2="160" y2="146" class="ln" marker-start="url(#ag)" marker-end="url(#ag)"/>
+  <text x="305" y="79" class="red s12 b">Subagents never talk to you.</text>
+  <text x="305" y="97" class="m s12">Every question and approval goes You ⇄ orchestrator. The blue arrows below are orchestrator ⇄ subagent only.</text>
+
+  <!-- everything below is shifted down 80px to make room for Row 0 -->
+  <g transform="translate(0,80)">
+
+  <!-- ───────── Row A: orchestrator spans all six phases ───────── -->
+  <rect x="35" y="70" width="1130" height="70" rx="10" class="orch"/>
+  <text x="55" y="97" class="t s12"><tspan class="h2">wf-orchestrator</tspan><tspan>   ·   start with </tspan><tspan class="mono">/wf-run PROJ-1234 fe</tspan><tspan>   ·   model: fast   ·   holds only short phase reports   ·   </tspan><tspan class="b">the only agent that talks to you</tspan></text>
+  <text x="55" y="120" class="m s12">Delegates each phase to a subagent with its own clean context window · relays the subagent's questions to you · records your approvals with wf.py</text>
+
+  <!-- delegate / report arrows (box centres: 120, 312, 504, 696, 888, 1080) -->
+  <line x1="120"  y1="143" x2="120"  y2="187" class="lnb" marker-start="url(#ab)" marker-end="url(#ab)"/>
+  <line x1="312"  y1="143" x2="312"  y2="187" class="lnb" marker-start="url(#ab)" marker-end="url(#ab)"/>
+  <line x1="504"  y1="143" x2="504"  y2="187" class="lnb" marker-start="url(#ab)" marker-end="url(#ab)"/>
+  <line x1="696"  y1="143" x2="696"  y2="187" class="lnb" marker-start="url(#ab)" marker-end="url(#ab)"/>
+  <line x1="888"  y1="143" x2="888"  y2="187" class="lnb" marker-start="url(#ab)" marker-end="url(#ab)"/>
+  <line x1="1080" y1="143" x2="1080" y2="187" class="lnb" marker-start="url(#ab)" marker-end="url(#ab)"/>
+  <text x="128" y="169" class="blue s11">task ↓  ·  report ↑</text>
+
+  <!-- plan gate -->
+  <rect x="525" y="150" width="150" height="24" rx="12" class="human"/>
+  <text x="600" y="166" class="red s11 b" text-anchor="middle">⛔ you approve the plan</text>
+  <line x1="600" y1="174" x2="600" y2="246" class="lnr"/>
+
+  <!-- fix loop review → implement -->
+  <path d="M 833 189 C 833 157, 751 157, 751 187" class="ln" marker-end="url(#ag)"/>
+  <text x="792" y="155" class="m s11" text-anchor="middle">fix ↺ max 2</text>
+
+  <!-- ───────── Row B: six phase subagents ───────── -->
+  <!-- 1 Analyze -->
+  <rect x="35" y="190" width="170" height="132" rx="10" class="agent"/>
+  <text x="47" y="214" class="t h2">1 · Analyze</text>
+  <text x="47" y="234" class="blue s11 mono">wf-1-analyze</text>
+  <text x="47" y="254" class="t s12">model: balanced</text>
+  <text x="47" y="274" class="t s12">ACs, comments, links</text>
+  <text x="47" y="294" class="amber s11 mono">→ 01-requirements.md</text>
+  <text x="47" y="312" class="m s10">own context window</text>
+
+  <!-- 2 Design -->
+  <rect x="227" y="190" width="170" height="132" rx="10" class="agent"/>
+  <text x="239" y="214" class="t h2">2 · Design</text>
+  <text x="239" y="234" class="blue s11 mono">wf-2-design</text>
+  <text x="239" y="254" class="t s12">model: balanced</text>
+  <text x="239" y="274" class="t s12">FE + Figma only</text>
+  <text x="239" y="294" class="amber s11 mono">→ 02-design.md</text>
+  <text x="239" y="312" class="m s10">own context window</text>
+
+  <!-- 3 Plan -->
+  <rect x="419" y="190" width="170" height="132" rx="10" class="agent"/>
+  <text x="431" y="214" class="t h2">3 · Plan</text>
+  <text x="431" y="234" class="blue s11 mono">wf-3-plan</text>
+  <text x="431" y="254" class="t s12">model: deep</text>
+  <text x="431" y="274" class="t s12">AC → test mapping</text>
+  <text x="431" y="294" class="amber s11 mono">→ 03-plan.md</text>
+  <text x="431" y="312" class="m s10">own context window</text>
+
+  <!-- 4 Implement -->
+  <rect x="611" y="190" width="170" height="132" rx="10" class="agent"/>
+  <text x="623" y="214" class="t h2">4 · Implement</text>
+  <text x="623" y="234" class="blue s11 mono">wf-4-implement</text>
+  <text x="623" y="254" class="t s12">model: balanced</text>
+  <text x="623" y="274" class="t s12">TDD red→green + a11y</text>
+  <text x="623" y="294" class="amber s11 mono">→ code + 04-impl.md</text>
+  <text x="623" y="312" class="m s10">own context window</text>
+
+  <!-- 5 Review -->
+  <rect x="803" y="190" width="170" height="132" rx="10" class="agent"/>
+  <text x="815" y="214" class="t h2">5 · Review</text>
+  <text x="815" y="234" class="blue s11 mono">wf-5-review</text>
+  <text x="815" y="254" class="t s12">model: second-opinion</text>
+  <text x="815" y="274" class="t s12">other model family</text>
+  <text x="815" y="294" class="amber s11 mono">→ 05-review.md</text>
+  <text x="815" y="312" class="m s10">own context window</text>
+
+  <!-- 6 Ship -->
+  <rect x="995" y="190" width="170" height="132" rx="10" class="agent"/>
+  <text x="1007" y="214" class="t h2">6 · Ship</text>
+  <text x="1007" y="234" class="blue s11 mono">wf-6-ship</text>
+  <text x="1007" y="254" class="t s12">model: fast</text>
+  <text x="1007" y="274" class="red s11 b">⛔ you approve the push</text>
+  <text x="1007" y="294" class="amber s11 mono">→ commit · push · PR</text>
+  <text x="1007" y="312" class="m s10">own context window</text>
+
+  <!-- order arrows between phases -->
+  <line x1="207" y1="256" x2="225" y2="256" class="ln" marker-end="url(#ag)"/>
+  <line x1="399" y1="256" x2="417" y2="256" class="ln" marker-end="url(#ag)"/>
+  <line x1="591" y1="256" x2="609" y2="256" class="ln" marker-end="url(#ag)"/>
+  <line x1="783" y1="256" x2="801" y2="256" class="ln" marker-end="url(#ag)"/>
+  <line x1="975" y1="256" x2="993" y2="256" class="ln" marker-end="url(#ag)"/>
+
+  <!-- ───────── Row C: data sources + shared files ───────── -->
+  <!-- Jira + Confluence → Analyze -->
+  <line x1="120" y1="398" x2="120" y2="326" class="lnp" marker-end="url(#ap)"/>
+  <rect x="35" y="400" width="170" height="70" rx="10" class="src"/>
+  <text x="47" y="422" class="t s12 b">Jira + Confluence</text>
+  <text x="47" y="441" class="purple s11 mono">MCP: atlassian/*</text>
+  <text x="47" y="458" class="purple s11 mono">or: jira_fetch.py</text>
+
+  <!-- Figma → Design -->
+  <line x1="312" y1="398" x2="312" y2="326" class="lnp" marker-end="url(#ap)"/>
+  <rect x="227" y="400" width="170" height="70" rx="10" class="src"/>
+  <text x="239" y="422" class="t s12 b">Figma</text>
+  <text x="239" y="441" class="purple s11 mono">MCP: figma/*</text>
+  <text x="239" y="458" class="purple s11 mono">or: figma_fetch.py</text>
+
+  <text x="35" y="492" class="m s11">Switch with data_source = mcp | scripts in config.json, then run wf.py sync</text>
+
+  <!-- Ship → GitHub -->
+  <line x1="1080" y1="326" x2="1080" y2="398" class="lnp" marker-end="url(#ap)"/>
+  <rect x="995" y="400" width="170" height="70" rx="10" class="src"/>
+  <text x="1007" y="422" class="t s12 b">GitHub</text>
+  <text x="1007" y="441" class="purple s11 mono">MCP: github/*</text>
+  <text x="1007" y="458" class="purple s11 mono">or: gh CLI</text>
+
+  <!-- phases ⇄ files -->
+  <line x1="504" y1="326" x2="504" y2="378" class="lna" marker-start="url(#aa)" marker-end="url(#aa)"/>
+  <line x1="696" y1="326" x2="696" y2="378" class="lna" marker-start="url(#aa)" marker-end="url(#aa)"/>
+  <line x1="888" y1="326" x2="888" y2="378" class="lna" marker-start="url(#aa)" marker-end="url(#aa)"/>
+
+  <rect x="419" y="380" width="554" height="110" rx="10" class="files"/>
+  <text x="435" y="404" class="t s12"><tspan class="mono b">.copilot-wf/PROJ-1234/</tspan><tspan class="b">   files are the memory</tspan><tspan class="m">  (gitignored)</tspan></text>
+  <text x="435" y="426" class="amber s11 mono">state.json · source/ · 01-requirements.md · 02-design.md</text>
+  <text x="435" y="444" class="amber s11 mono">03-plan.md · 04-implementation.md · 05-review.md · pr-body.md</text>
+  <text x="435" y="470" class="m s11">Every phase reads its inputs here and writes its results here, so no chat history is needed.</text>
+
+  <!-- ───────── Row D: code layer ───────── -->
+  <rect x="35" y="525" width="1130" height="187" rx="12" class="codebg"/>
+  <text x="55" y="550" class="green h2">Code layer: deterministic, no AI. The rules that must always hold</text>
+  <text x="55" y="570" class="m s11">Every phase starts with wf.py check (may I start?) and ends with wf.py done (mark complete and print the usage table).</text>
+
+  <rect x="55" y="585" width="545" height="114" rx="8" class="code"/>
+  <text x="70" y="605" class="t s12 mono b">tools/copilot-wf/wf.py</text>
+  <text class="t s11 mono"><tspan x="70" y="624">init</tspan><tspan x="140" class="m">ticket type → list of phases to run</tspan></text>
+  <text class="t s11 mono"><tspan x="70" y="639">check</tspan><tspan x="140" class="m">gate: earlier phases done? fix cycles left?</tspan></text>
+  <text class="t s11 mono"><tspan x="70" y="654">approve</tspan><tspan x="140" class="m">records your own words (plan, ship)</tspan></text>
+  <text class="t s11 mono"><tspan x="70" y="669">done</tspan><tspan x="140" class="m">completes a phase, prints the usage table</tspan></text>
+  <text class="t s11 mono"><tspan x="70" y="684">status</tspan><tspan x="140" class="m">where are we? → the orchestrator resumes here</tspan></text>
+
+  <rect x="620" y="585" width="525" height="114" rx="8" class="code"/>
+  <text x="635" y="605" class="t s12 mono b">tools/copilot-wf/config.json</text>
+  <text class="t s11 mono"><tspan x="635" y="624">phase_sets</tspan><tspan x="755" class="m">Story · Task · Bug: all 6   ·   Spike: analyze → plan</tspan></text>
+  <text class="t s11 mono"><tspan x="635" y="639">design</tspan><tspan x="755" class="m">runs only for FE with a Figma link</tspan></text>
+  <text class="t s11 mono"><tspan x="635" y="654">data_source</tspan><tspan x="755" class="m">mcp | scripts</tspan></text>
+  <text class="t s11 mono"><tspan x="635" y="669">models</tspan><tspan x="755" class="m">fast · balanced · deep · second-opinion</tspan></text>
+  <text class="t s11 mono"><tspan x="635" y="684">max_fix_cycles</tspan><tspan x="755" class="m">2 (then a human decides)</tspan></text>
+
+  <!-- ───────── Row E: legend + mode B ───────── -->
+  <rect x="35"  y="738" width="14" height="14" rx="3" class="agent"/><text x="56"  y="750" class="t s12">AI agent (subagent)</text>
+  <rect x="215" y="738" width="14" height="14" rx="3" class="human"/><text x="236" y="750" class="t s12">You / human gate</text>
+  <rect x="385" y="738" width="14" height="14" rx="3" class="src"/><text x="406" y="750" class="t s12">External data</text>
+  <rect x="530" y="738" width="14" height="14" rx="3" class="files"/><text x="551" y="750" class="t s12">Files on disk</text>
+  <rect x="670" y="738" width="14" height="14" rx="3" class="code"/><text x="691" y="750" class="t s12">Deterministic code</text>
+  <line x1="855" y1="745" x2="887" y2="745" class="lnb" marker-start="url(#ab)" marker-end="url(#ab)"/><text x="896" y="750" class="t s12">orchestrator ⇄ subagent (task / report)</text>
+
+  <text x="35" y="786" class="t s12"><tspan class="b">Mode B (step by step):</tspan><tspan> no orchestrator. Pick wf-1 … wf-6 yourself (VS Code handoff buttons or IntelliJ agent picker), new chat per step.</tspan></text>
+  <text x="35" y="806" class="m s12">Same files, same gates, same usage table. Only who moves to the next phase changes: you instead of wf-orchestrator.</text>
+  </g>
+</svg>

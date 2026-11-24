@@ -11,8 +11,8 @@
 - New routes/endpoints: success, validation error, not found, forbidden, downstream failure covered
 
 ## Architecture (compare with the closest existing feature)
-- FE: components presentational, data access in hooks/services, design-system components and tokens reused, no literal colours/spacing
-- BE: controller → service → repository respected; DTOs not entities on the API; constructor injection; errors via `@ControllerAdvice`
+- Stack-specific architecture rules: `tools/copilot-wf/stacks/<stack>/review.md` (React, Angular, Spring Boot, …)
+- Design-system components and tokens reused; no literal colours/spacing (FE)
 - Naming, folder placement and patterns consistent with the repo
 
 ## Security and privacy (financial services)

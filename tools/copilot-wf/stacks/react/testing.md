@@ -1,4 +1,21 @@
-# Frontend testing patterns (React + TS)
+# Testing: React + TypeScript
+
+## Commands (confirm in `package.json` → `scripts`; don't guess)
+| Purpose | Typical command |
+|---|---|
+| One test file | `npm test -- <path/to/file.test.tsx>` |
+| Whole suite | `npm test` |
+| Type-check | `npm run typecheck` or `npx tsc --noEmit` |
+| Lint | `npm run lint` |
+
+## Test levels
+| What you're proving | Level | Typical setup |
+|---|---|---|
+| Pure rule / util / hook logic | unit | plain test, `renderHook` for hooks |
+| Component behaviour + a11y | component | React Testing Library + `user-event` (+ `jest-axe` / `vitest-axe`) |
+| Data fetching | component/integration | mock the network at the boundary (MSW or the repo's mock) |
+
+## Patterns
 
 Adjust to whatever the repo already uses (Jest or Vitest, MSW or fetch mocks). Never add a new test library without asking.
 

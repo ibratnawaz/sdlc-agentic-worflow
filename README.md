@@ -12,14 +12,17 @@ A 6-step, human-gated workflow for GitHub Copilot (VS Code for React/TS, Intelli
 After every step you see a usage table (an estimate, plus the real credits if you log them).
 To learn *why* it's built this way, read **[LEARNING.md](LEARNING.md)**.
 
+📊 **Visual overview:** [docs/workflow-diagram.svg](docs/workflow-diagram.svg). It shows the whole workflow on one page: the orchestrator,
+the six phase subagents, the human gates, the data sources (MCP or scripts), the shared files, and the code layer that enforces the rules.
+
+[![Workflow diagram](docs/workflow-diagram.svg)](docs/workflow-diagram.svg)
+
 ## What's inside
 
 ```
 .github/
 ├── copilot-instructions.md     always-on rules (kept short: costs tokens on every request)
-├── instructions/               stack rules, loaded only for matching files
-│   ├── react-ts.instructions.md      applyTo **/*.ts,tsx
-│   └── spring-boot.instructions.md   applyTo **/*.java
+├── instructions/               installed by `wf.py use-stack` (e.g. angular.instructions.md)
 ├── agents/                     WHO does each step: model, tools, handoff buttons
 │   ├── wf-orchestrator.agent.md      v2: runs every phase as a subagent (clean context)
 │   └── wf-1-analyze … wf-6-ship.agent.md
@@ -29,8 +32,9 @@ To learn *why* it's built this way, read **[LEARNING.md](LEARNING.md)**.
 │   └── tdd-implementation/  code-review/  ship-pr/
 └── prompts/                    slash commands: /wf-run (orchestrated), /wf-start (step by step), /wf-status
 tools/copilot-wf/               deterministic code (no AI)
-├── config.json                 phase sets, mcp/scripts switch, model tiers
-├── wf.py                       state, gates, usage table, sync
+├── config.json                 phase sets, stacks (detection), mcp/scripts switch, model tiers
+├── wf.py                       state, gates, usage table, sync, detect / use-stack
+├── stacks/                     one folder per language: react/ angular/ spring-boot/ (how to add one: stacks/README.md)
 ├── jira_fetch.py               scripts mode: Jira + Confluence → trimmed markdown
 ├── figma_fetch.py              scripts mode: one Figma frame → compact outline (+PNG)
 └── tests/                      python3 -m unittest discover tools/copilot-wf/tests
@@ -44,7 +48,18 @@ tools/copilot-wf/               deterministic code (no AI)
    ```
    .copilot-wf/
    ```
-3. Replace the example conventions in `.github/instructions/*.instructions.md` with your team's real ones.
+3. Pick the repo's stack and install its Copilot instructions:
+   ```bash
+   python3 tools/copilot-wf/wf.py detect              # e.g. "angular  side=fe"
+   python3 tools/copilot-wf/wf.py use-stack angular    # → .github/instructions/angular.instructions.md
+   ```
+   Supported: `react`, `angular`, `spring-boot`. Full-stack repo: `use-stack angular spring-boot`.
+   Put your team's real conventions in `tools/copilot-wf/stacks/<stack>/`, not in the installed copy.
+   **Add this to CI** so a hand-edited or stale copy fails the build (exit 1, with the fix printed):
+   ```bash
+   python3 tools/copilot-wf/wf.py stacks
+   ```
+   New language? Follow [tools/copilot-wf/stacks/README.md](tools/copilot-wf/stacks/README.md).
 4. Make the MCP server names match: the agents use `atlassian/*`, `figma/*`, `github/*`. If your MCP config names
    the servers differently, edit `mcp_tools` in `tools/copilot-wf/config.json`, then run `python3 tools/copilot-wf/wf.py sync`.
 5. Check the model names in `config.json → models.tiers` against your Copilot model picker, then run `wf.py sync`.
@@ -52,11 +67,11 @@ tools/copilot-wf/               deterministic code (no AI)
 ## Use it: two modes
 
 ### A. Orchestrated (v2, recommended): one chat, a clean context per phase
-`/wf-run PROJ-1234 fe` (or pick the **wf-orchestrator** agent and type `PROJ-1234 fe`).
+`/wf-run PROJ-1234` (or pick the **wf-orchestrator** agent and type `PROJ-1234`). The stack is detected; in a monorepo add it: `PROJ-1234 angular`.
 
 The orchestrator runs each phase as a **subagent** in its own context window and only receives a short
 *phase report* back. You talk only to the orchestrator: it relays questions, asks you to approve the plan and the push,
-and shows a usage line after each phase. Interrupted? Run `/wf-run PROJ-1234 fe` again and it resumes from `wf.py status`.
+and shows a usage line after each phase. Interrupted? Run `/wf-run PROJ-1234` again and it resumes from `wf.py status`.
 
 ```
 you ⇄ wf-orchestrator  (holds only ~20-line reports)
@@ -69,8 +84,8 @@ you ⇄ wf-orchestrator  (holds only ~20-line reports)
 ```
 
 ### B. Step by step (v1 style): you drive each phase
-**VS Code:** `/wf-start PROJ-1234 fe`, then the handoff button at the end of each step.
-**IntelliJ:** pick `wf-1-analyze`, type `PROJ-1234 be`, then pick the agent each step names next.
+**VS Code:** `/wf-start PROJ-1234`, then the handoff button at the end of each step.
+**IntelliJ:** pick `wf-1-analyze`, type `PROJ-1234`, then pick the agent each step names next.
 Tip: start a **new chat** for each step. The files in `.copilot-wf/` carry everything over, so you get a clean context per step.
 
 ### IntelliJ and the orchestrator

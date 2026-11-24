@@ -3,7 +3,7 @@ name: tdd-implementation
 description: >
   Implements an approved plan test-first: writes failing unit/integration tests for each
   acceptance criterion's good and bad paths, then the minimum code to pass, then refactors,
-  for React/TypeScript or Spring Boot. Enforces accessibility for frontend code. Use for
+  for any configured stack (React, Angular, Spring Boot, …). Enforces accessibility for frontend code. Use for
   "implement the plan", "TDD this", or Step 4 of the copilot workflow.
 ---
 
@@ -30,9 +30,10 @@ Red → Green → Refactor, **one AC at a time**, in the order of the plan.
    **Fix cycle** (asked to address review findings): also read `.copilot-wf/<KEY>/05-review.md`. For each `blocker`/`major`,
    write or tighten a test that exposes it (red), then fix it (green). Append a *Fix cycle N* section to `04-implementation.md`.
    `wf.py check` caps the number of cycles (exit 5 → stop and report `BLOCKED`).
-2. **Find the commands** (don't guess):
-   - FE: `package.json` scripts → test, lint, type-check (e.g. `npm test -- <file>`, `npm run lint`, `npx tsc --noEmit`).
-   - BE: `./mvnw test -Dtest=<Class>` / `./gradlew test --tests <Class>`; full: `./mvnw verify` / `./gradlew check`.
+2. **Read the stack profile** `tools/copilot-wf/stacks/<stack>/testing.md`: commands, test levels and patterns for this stack.
+   Then **confirm the commands** in the repo (`package.json` scripts, `angular.json` targets, `mvnw`/`gradlew`…). Don't guess.
+   The ticket's stack comes from `python3 tools/copilot-wf/wf.py status --ticket <KEY>` (`stack=`).
+   If it says `stack=none`, there's no profile: use the repo's own conventions and say so in your output.
 3. **Baseline:** run the full test suite once *before* changing anything. Record pass/fail counts.
    Failures that already exist are not yours. Note them; don't fix them silently.
 4. **For each AC in plan order:**
@@ -40,7 +41,7 @@ Red → Green → Refactor, **one AC at a time**, in the order of the plan.
    2. Run them → confirm they fail **because the behaviour is missing** (not a typo or bad import).
    3. Write the minimum code to pass. Run → green.
    4. Refactor (names, duplication), run again → still green.
-   Stack specifics: `references/frontend-testing.md` or `references/backend-testing.md`.
+   Patterns for this stack: `tools/copilot-wf/stacks/<stack>/testing.md`.
 5. **FE accessibility:** go through `references/accessibility-checklist.md` for every new/changed interactive element,
    and add an automated a11y assertion if the repo has the helper.
 6. **Full check:** whole test suite + lint + type-check/compile. Everything green, or stop and report.

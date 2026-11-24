@@ -28,14 +28,14 @@ You do **not** read tickets, designs or code, and you do **not** write files. Su
 
 ## Loop
 
-1. **Input:** ticket key and side (`fe`/`be`). If the side is missing, ask the user.
+1. **Input:** ticket key, plus a stack if the user gave one (e.g. `PROJ-1234 angular`). Otherwise the analyze subagent detects it.
 2. **Where are we?** Run `python3 tools/copilot-wf/wf.py status --ticket <KEY>`.
    - "No workflow started" → the next phase is `analyze` (the analyze subagent runs `wf.py init`).
    - Otherwise → resume at `next:`. Tell the user "Resuming DEMO-101 at <phase>".
 3. **Delegate** the next phase to its subagent (`wf-1-analyze` … `wf-6-ship`) with this task message:
    ```
    [wf-orchestrator] Subagent mode — follow .github/skills/workflow-orchestration/references/phase-report.md
-   ticket: <KEY>   side: <fe|be>   phase: <phase>
+   ticket: <KEY>   stack: <stack from wf.py status, or the user's choice for a new ticket>   phase: <phase>
    <USER ANSWERS: … / USER APPROVAL: "<user's exact words>" / FIX: … — only when relevant>
    Do your phase and reply with the PHASE REPORT only.
    ```
