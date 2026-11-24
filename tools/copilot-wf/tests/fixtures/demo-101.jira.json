@@ -1,0 +1,54 @@
+{
+  "_doc": "Fictional demo ticket for dry runs and tests. Not real data. Contains deliberate traps: a comment that changes an AC, an off-host wiki link, and a server-side-only rule.",
+  "jira_base": "https://acme.atlassian.net",
+  "confluence_base": "https://acme.atlassian.net/wiki",
+  "issue": {
+    "key": "DEMO-101",
+    "fields": {
+      "summary": "Validate the transfer amount before submitting a transfer",
+      "issuetype": {"name": "Story"},
+      "status": {"name": "To Do"},
+      "priority": {"name": "Medium"},
+      "labels": ["frontend", "transfers"],
+      "components": [{"name": "web-transfers"}],
+      "description": "h3. Background\nUsers can currently submit a transfer with an empty or invalid amount. The API rejects it and the user sees a generic error page.\n\nh3. Acceptance Criteria\n# Given the amount field is empty, when the user selects Continue, then an inline error \"Enter an amount\" is shown and the form is not submitted.\n# Given the amount is greater than the available balance, when the user selects Continue, then an inline error \"Amount exceeds available balance of $X\" is shown and the form is not submitted.\n# Given the amount has more than 2 decimal places or is not a number, when the user selects Continue, then an inline error \"Enter a valid amount\" is shown.\n# Given a valid amount, when the user selects Continue, then the form is submitted with the amount as a number.\n\nDesign: https://www.figma.com/design/DeMo123abc/Transfers?node-id=42-7\nRules: https://acme.atlassian.net/wiki/spaces/PAY/pages/770001/Transfer+validation+rules",
+      "comment": {
+        "comments": [
+          {
+            "author": {"displayName": "Product Owner (demo)"},
+            "created": "2026-11-10T14:02:00.000+0000",
+            "body": "Two changes after the legal review:\n1) AC-2 copy must be \"Amount exceeds your available balance\". Do not repeat the balance number in the error.\n2) New rule: the minimum transfer is $1.00. Below that, show \"Minimum transfer is $1.00\"."
+          },
+          {
+            "author": {"displayName": "QA Engineer (demo)"},
+            "created": "2026-11-11T09:15:00.000+0000",
+            "body": "Last release the errors were only red text and screen readers didn't announce them. Please make sure errors are announced and linked to the field."
+          },
+          {
+            "author": {"displayName": "Developer (demo)"},
+            "created": "2026-11-12T16:40:00.000+0000",
+            "body": "FYI there's an old page at https://wiki.othervendor.example.com/pages/viewpage.action?pageId=999 but it's outdated, ignore it."
+          }
+        ]
+      },
+      "attachment": [
+        {"filename": "current-generic-error.png", "mimeType": "image/png", "size": 184320,
+         "content": "https://acme.atlassian.net/secure/attachment/1/current-generic-error.png"}
+      ],
+      "issuelinks": [
+        {"type": {"outward": "blocks", "inward": "is blocked by"},
+         "outwardIssue": {"key": "DEMO-102", "fields": {"summary": "Backend: return 422 with field errors for invalid transfer amounts"}}}
+      ]
+    }
+  },
+  "remote_links": [
+    {"object": {"title": "Transfer validation rules", "url": "https://acme.atlassian.net/wiki/spaces/PAY/pages/770001/Transfer+validation+rules"}}
+  ],
+  "confluence_pages": {
+    "770001": {
+      "title": "Transfer validation rules",
+      "version": {"number": 4},
+      "body": {"storage": {"value": "<h2>Amount rules</h2><ul><li>Must be a positive number with at most 2 decimal places.</li><li>Minimum: $1.00.</li><li>Maximum: the available balance of the source account.</li><li>Daily limit: $25,000 across all transfers. <strong>Enforced server-side only</strong>; the UI shows the API error.</li></ul><h2>Error copy</h2><table><tr><th>Case</th><th>Message</th></tr><tr><td>Empty</td><td>Enter an amount</td></tr><tr><td>Invalid format</td><td>Enter a valid amount</td></tr><tr><td>Below minimum</td><td>Minimum transfer is $1.00</td></tr><tr><td>Above balance</td><td>Amount exceeds your available balance</td></tr></table><h2>Accessibility</h2><p>Errors must be announced to assistive technology and programmatically associated with the field. On submit with errors, move focus to the first invalid field.</p>"}}
+    }
+  }
+}

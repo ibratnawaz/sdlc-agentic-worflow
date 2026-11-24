@@ -1,0 +1,54 @@
+{
+  "_doc": "Fictional Figma /v1/files/:key/nodes response for node 42:7 (dry runs and tests).",
+  "name": "Transfers",
+  "nodes": {
+    "42:7": {
+      "document": {
+        "id": "42:7", "type": "FRAME", "name": "Transfer – amount (error state)",
+        "layoutMode": "VERTICAL", "itemSpacing": 24,
+        "absoluteBoundingBox": {"x": 0, "y": 0, "width": 480, "height": 620},
+        "children": [
+          {"id": "42:8", "type": "TEXT", "name": "Heading", "characters": "Transfer funds", "styles": {"text": "S:h2"}},
+          {"id": "42:9", "type": "INSTANCE", "name": "Error summary", "componentId": "C:alert",
+           "componentProperties": {"Tone#3:0": {"type": "VARIANT", "value": "Critical"}},
+           "styles": {"fill": "S:bg-critical"},
+           "children": [{"type": "VECTOR", "name": "icon"}, {"type": "TEXT", "characters": "Please fix the errors below"}]},
+          {"id": "42:10", "type": "INSTANCE", "name": "From account", "componentId": "C:select",
+           "componentProperties": {"State#1:0": {"type": "VARIANT", "value": "Default"}},
+           "children": [{"type": "TEXT", "characters": "From account"}, {"type": "TEXT", "characters": "Everyday Checking ••4821"}]},
+          {"id": "42:11", "type": "FRAME", "name": "Amount group", "layoutMode": "VERTICAL", "itemSpacing": 8,
+           "children": [
+             {"id": "42:12", "type": "INSTANCE", "name": "Amount", "componentId": "C:textfield",
+              "componentProperties": {"State#1:0": {"type": "VARIANT", "value": "Error"}, "Prefix#2:0": {"type": "TEXT", "value": "$"}},
+              "children": [{"type": "TEXT", "characters": "Amount"}, {"type": "TEXT", "characters": "Enter an amount"}]},
+             {"id": "42:13", "type": "TEXT", "name": "Balance hint", "characters": "Available balance: $2,450.00", "styles": {"text": "S:body-sm", "fill": "S:text-muted"}}
+           ]},
+          {"id": "42:14", "type": "RECTANGLE", "name": "Divider", "styles": {"fill": "S:border-subtle"}},
+          {"id": "42:15", "type": "FRAME", "name": "Actions", "layoutMode": "HORIZONTAL", "itemSpacing": 12,
+           "children": [
+             {"id": "42:16", "type": "INSTANCE", "name": "Back", "componentId": "C:button",
+              "componentProperties": {"Variant#1:0": {"type": "VARIANT", "value": "Secondary"}},
+              "children": [{"type": "TEXT", "characters": "Back"}]},
+             {"id": "42:17", "type": "INSTANCE", "name": "Continue", "componentId": "C:button",
+              "componentProperties": {"Variant#1:0": {"type": "VARIANT", "value": "Primary"}},
+              "children": [{"type": "TEXT", "characters": "Continue"}]}
+           ]},
+          {"id": "42:18", "type": "FRAME", "name": "Old layout (hidden)", "visible": false, "children": []}
+        ]
+      },
+      "components": {
+        "C:alert": {"name": "InlineAlert", "description": "Page-level message"},
+        "C:select": {"name": "Select"},
+        "C:textfield": {"name": "TextField"},
+        "C:button": {"name": "Button"}
+      },
+      "styles": {
+        "S:h2": {"name": "Heading/H2", "styleType": "TEXT"},
+        "S:body-sm": {"name": "Body/Small", "styleType": "TEXT"},
+        "S:text-muted": {"name": "Color/Text/Muted", "styleType": "FILL"},
+        "S:bg-critical": {"name": "Color/Background/Critical", "styleType": "FILL"},
+        "S:border-subtle": {"name": "Color/Border/Subtle", "styleType": "FILL"}
+      }
+    }
+  }
+}

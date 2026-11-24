@@ -1,0 +1,50 @@
+{
+  "_doc": "Single source of truth for the workflow. Read by wf.py (deterministic code), never interpreted by the AI on its own. Change behaviour here, not in prompts.",
+
+  "data_source": "mcp",
+  "_data_source_doc": "'mcp' = agents call the Atlassian / Figma / GitHub MCP servers. 'scripts' = agents run jira_fetch.py / figma_fetch.py / gh CLI, which fetch, trim and save small markdown files. Only Steps 1, 2 and 6 differ between the two.",
+
+  "mcp_tools": {
+    "_doc": "MCP tools each stage gets in 'mcp' mode. In 'scripts' mode they are removed from the agent, so their (large) tool definitions are not sent with every request. Names must match the server names in your MCP config (e.g. .vscode/mcp.json). Narrow '/*' to specific tools to save more tokens.",
+    "analyze": ["atlassian/*"],
+    "design":  ["figma/*"],
+    "ship":    ["github/*"]
+  },
+
+  "artifacts_dir": ".copilot-wf",
+
+  "phase_sets": {
+    "_doc": "Which phases run for each Jira ticket type, in order. The AI classifies the type; this table decides the phases.",
+    "Story": ["analyze", "design", "plan", "implement", "review", "ship"],
+    "Task":  ["analyze", "design", "plan", "implement", "review", "ship"],
+    "Bug":   ["analyze", "design", "plan", "implement", "review", "ship"],
+    "Spike": ["analyze", "plan"]
+  },
+
+  "conditional_phases": {
+    "design": "Runs only when side == 'fe' AND a Figma link exists (in the ticket or given by the user). Otherwise it is skipped automatically."
+  },
+
+  "models": {
+    "_doc": "Tiers decouple 'what kind of thinking' from 'which model'. Edit the tier lists to match the models your org enables in the Copilot model picker, then run: python3 tools/copilot-wf/wf.py sync",
+    "tiers": {
+      "fast":           ["Claude Haiku 4.5 (copilot)"],
+      "balanced":       ["Claude Sonnet 4.6 (copilot)"],
+      "deep":           ["Claude Opus 4.8 (copilot)", "Claude Sonnet 4.6 (copilot)"],
+      "second-opinion": ["GPT-5.3-Codex (copilot)", "Claude Opus 4.8 (copilot)"]
+    },
+    "stages": {
+      "analyze":   "balanced",
+      "design":    "balanced",
+      "plan":      "deep",
+      "implement": "balanced",
+      "review":    "second-opinion",
+      "ship":      "fast"
+    }
+  },
+
+  "usage": {
+    "chars_per_token": 4,
+    "_doc": "Rough rule of thumb for English text and code. Used only for the per-stage estimate; the real number is in the IDE (see LEARNING.md §4)."
+  }
+}

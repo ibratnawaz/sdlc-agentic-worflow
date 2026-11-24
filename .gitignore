@@ -1,0 +1,5 @@
+# Workflow artifacts contain ticket content: never commit them.
+.copilot-wf/
+__pycache__/
+.env
+.env.*
